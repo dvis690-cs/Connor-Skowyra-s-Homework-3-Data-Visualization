@@ -1,0 +1,268 @@
+---
+title: "Connor Skowyra's HW 3 Visualization of MA Schools"
+author: "Connor Skowyra"
+date: "`r Sys.Date()`"
+output: 
+  flexdashboard::flex_dashboard
+---
+
+```{r, include=FALSE}
+library(ggplot2)
+library(flexdashboard)
+library(flextable)
+library(readxl)
+library(scales)
+library(psych)
+```
+
+```{r, include=FALSE}
+rm(list = ls()) 
+link <- "C:/Users/skowy/Documents/GitHub/Connor-Skowyra-s-Homework-3-Data-Visualization/ncesdata_MASS_202425.xlsx"
+MASchools <- read_excel(link, skip = 11, col_names = TRUE, na = c("", "NA", "–", "†"))
+dim(MASchools)
+names(MASchools)
+```
+
+```{r, include=FALSE}
+str(MASchools,width = 70,strict.width='cut')
+```
+
+```{r, include=FALSE}
+head(MASchools$`County Name`,20)
+
+
+absoluteT=table(MASchools$`County Name`,
+                 useNA = "ifany")
+absoluteT
+```
+
+```{r, include=FALSE}
+names(absoluteT)[5]='Unknown'
+propT=prop.table(absoluteT)*100
+propT
+```
+
+```{r, include=FALSE}
+(tableFreq=as.data.frame(absoluteT))
+names(tableFreq)=c("County Name","Count")
+tableFreq$Percent=as.vector(propT)
+tableFreq
+```
+
+```{r, include=FALSE}
+base = ggplot(data = tableFreq, aes(x = `County Name`, y = Count))
+
+plot1 = base + geom_col()
+plot1
+```
+```{r, include=FALSE}
+titleText='How Many Schools are Located in Each MA County By Percentage?'
+sourceText='Source: US Department of Education'
+
+plot2 = plot1 + labs(title=titleText,
+                     x =NULL, 
+                     y = NULL,
+                     caption = sourceText) 
+plot2
+```
+
+```{r, include=FALSE}
+base= ggplot(data = tableFreq, 
+             aes(x = `County Name`,
+                 y = Percent)) 
+
+plot1 = base + geom_col(fill ="gray") 
+
+plot2 = plot1 + labs(title=titleText,
+                     x =NULL, 
+                     y = NULL,
+                     caption = sourceText)
+
+plot3 = plot2 + geom_hline(yintercept = 10,
+                           linetype="dashed", 
+                           linewidth=1.5,
+                           alpha=0.5)
+plot3
+```
+
+```{r, include=FALSE}
+plot4 = plot3 + scale_y_continuous(breaks=c(0,10, 25,40),
+                                   limits = c(0, 40), 
+                                   labels=unit_format(suffix = '%')) 
+plot4
+```
+
+```{r, include=FALSE}
+plot5 = plot4 + theme(plot.caption = element_text(hjust = 0), 
+                      plot.title = element_text(hjust = 0.5))
+plot5
+```
+
+```{r, include=FALSE}
+paste0(round(tableFreq$Percent,2), '%')
+```
+
+```{r, include=FALSE}
+LABELS=paste0(round(tableFreq$Percent,2), '%')
+plot6 = plot5 + geom_text(vjust=0,
+                          size = 5,
+                          aes(y = Percent ,
+                              label = LABELS))
+plot6
+```
+
+```{r, include=FALSE}
+LABELS = paste0(round(tableFreq$Percent, 2), '%')
+
+base = ggplot(data = tableFreq, 
+              aes(x = reorder(`County Name`, Percent), y = Percent)) 
+
+base = base + theme_classic()
+
+plot1 = base + geom_col(fill ="gray") 
+
+plot2 = plot1 + labs(title = titleText,
+                     x = NULL, 
+                     y = NULL,
+                     caption = sourceText)
+
+plot3 = plot2 + geom_hline(yintercept = 11, 
+                           linetype = "dashed", 
+                           linewidth = 1.5, 
+                           alpha = 0.5)
+
+plot4 = plot3 + scale_y_continuous(breaks = c(0, 11, 22),
+                                   limits = c(0, 26),
+                                   labels = scales::unit_format(suffix = '%')) 
+
+plot5 = plot4 + theme(plot.caption = element_text(hjust = 0),
+                      plot.title = element_text(hjust = 0.5),
+                      axis.text.x = element_text(angle = 45, hjust = 1))
+
+plot6 = plot5 + geom_text(vjust = -0.5,
+                          size = 3,
+                          aes(y = Percent,
+                              label = LABELS))
+plot6
+```
+
+```{r, include=FALSE}
+MASchools$`Student Teacher Ratio` <- as.numeric(MASchools$`Student Teacher Ratio`)
+base = ggplot(MASchools, aes(x = `Student Teacher Ratio`)) + theme_classic()
+histRatio = base + geom_histogram(fill = "gray", color = "black") 
+
+histRatio
+```
+
+```{r, include=FALSE}
+boxRatio=base + geom_boxplot() 
+boxRatio
+```
+
+```{r, include=FALSE}
+(upperT=ggplot_build(boxRatio)$data[[1]]$xmax)
+(lowerT=ggplot_build(boxRatio)$data[[1]]$xmin)
+```
+
+```{r, include=FALSE}
+lowOcount=sum(ggplot_build(boxRatio)$data[[1]]$outliers[[1]]<=lowerT)
+upperOcount=sum(ggplot_build(boxRatio)$data[[1]]$outliers[[1]]>=upperT)
+
+lowOcount
+upperOcount
+```
+
+```{r, include=FALSE}
+base=ggplot(MASchools, aes(x=0,y=`Student Teacher Ratio`))+
+            theme_classic()
+
+vio=base+geom_violin(trim=FALSE, fill="grey")
+
+viobox1=vio+geom_boxplot() + coord_flip() 
+
+viobox1
+
+viobox2=viobox1 + 
+        scale_y_continuous(trans = scales::pseudo_log_trans(base = 10))
+viobox2
+```
+
+```{r, include=FALSE}
+MASchools <- subset(MASchools, `Student Teacher Ratio` <= 1000 | is.na(`Student Teacher Ratio`))
+
+md = median(MASchools$`Student Teacher Ratio`, na.rm = TRUE)
+mn = mean(MASchools$`Student Teacher Ratio`, na.rm = TRUE)
+sk = skew(MASchools$`Student Teacher Ratio`, na.rm = TRUE)
+
+txtMean = paste0('Mean:', round(mn))
+txtSkew = paste0('Skewness:', round(sk, 2))
+txtMedian = paste0('Median:', round(md, 2))
+
+txtOutliersUp = paste0('upper outlying schools: ', upperOcount)
+txtOutliersLo = paste0('lower outlying schools: ', lowOcount)
+
+viobox = vio + 
+         scale_y_continuous(trans = scales::pseudo_log_trans(base = 10)) + 
+         geom_boxplot(width = 0.25,
+                      outlier.color = 'red',
+                      colour = 'white',
+                      fill = 'black') + 
+         coord_flip() +
+         labs(title = "Average Student Teacher Ratio in Massachusetts")
+
+viobox = viobox + theme(axis.text.y = element_blank(),
+                        axis.ticks.y = element_blank(),
+                        axis.title.y = element_blank(),
+                        plot.title = element_text(hjust = 0.5, face = "bold")) +
+         annotate(geom = 'text', 
+                  size = 3, 
+                  label = txtOutliersUp,
+                  y = upperT + 35,
+                  x = 0.1, 
+                  color = 'red',
+                  angle = 0) +
+         annotate(geom = 'text', 
+                  size = 3,
+                  label = txtOutliersLo,
+                  y = lowerT - 3,
+                  x = 0.1, 
+                  color = 'red',
+                  angle = 0) +
+         geom_hline(yintercept = mn, color = 'darkgreen', linetype = "dotted") +
+         annotate(geom = 'text', 
+                  color = 'darkgreen',
+                  fontface = "bold",
+                  size = 3, 
+                  label = txtMean,
+                  x = 0.22,
+                  y = mn + 1,
+                  angle = 90) +
+         annotate(geom = 'text', 
+                  color = 'white', 
+                  size = 3, 
+                  fontface = "bold",
+                  label = txtMedian,
+                  x = 0,
+                  y = md - 1,
+                  angle = 90)
+
+viobox
+```
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Percentage of Schools by County
+
+```{r, echo=FALSE}
+plot6
+```
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Student-Teacher Ratios in Massachusetts
+
+```{r, echo=FALSE}
+viobox
+```
